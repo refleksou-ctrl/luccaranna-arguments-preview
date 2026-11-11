@@ -67,16 +67,13 @@
   }
 
   if (option === 3) {
-    html = '<section class="args args--cube"><div class="args-sticky"><div class="container args-stage">' +
-      '<div class="args-cube">' + ARGS.map(function (a, i) {
-        return '<div class="args-face" style="--i:' + i + '"><div class="args-band__inner">' +
-          '<span class="args-num">' + num(i) + '</span>' +
-          '<p class="args-title">' + a.title + '</p>' +
-          '<p class="args-desc">' + a.text + '</p>' +
-        '</div></div>';
-      }).join('') + '</div>' +
-      '<div class="args-dots">' + ARGS.map(function () { return '<span></span>'; }).join('') + '</div>' +
-    '</div></div></section>';
+    // same markup + look as the live band; only the faces sit on a box
+    html = '<section class="args args--cube"><div class="args-cube">' + ARGS.map(function (a, i) {
+      return '<div class="args-face" style="--i:' + i + '"><div class="container">' +
+        '<p class="large-text">' + a.title + '</p>' +
+        '<p class="small-text">' + a.text + '</p>' +
+      '</div></div>';
+    }).join('') + '</div></section>';
   }
 
   var wrap = document.createElement('div');
@@ -152,7 +149,6 @@
   function cube(el) {
     var box = el.querySelector('.args-cube');
     var faces = gsap.utils.toArray('.args-face', el);
-    var dots = gsap.utils.toArray('.args-dots span', el);
     var state = { rot: 0 };
 
     function render() {
@@ -161,21 +157,25 @@
       faces.forEach(function (f, i) {
         // shade faces as they turn away from the viewer
         var a = (r - i) * Math.PI / 2;
-        f.style.filter = 'brightness(' + (0.7 + 0.3 * Math.max(0, Math.cos(a))).toFixed(3) + ')';
+        f.style.filter = 'brightness(' + (0.75 + 0.25 * Math.max(0, Math.cos(a))).toFixed(3) + ')';
       });
-      var active = Math.round(r);
-      dots.forEach(function (d, i) { d.classList.toggle('on', i === active); });
     }
 
+    // same pin as the live site (whole page holds with the band centred),
+    // but rotation follows the scroll instead of snapping between fades
     var tl = gsap.timeline({
       onUpdate: render,
-      scrollTrigger: { trigger: el, start: function () { return 'top ' + hdr(); }, end: 'bottom bottom', scrub: 0.8 }
+      scrollTrigger: {
+        trigger: el, start: 'center center',
+        end: function () { return '+=' + N * innerHeight * 0.7; },
+        pin: '#content', pinSpacing: true, anticipatePin: 1, scrub: 0.8
+      }
     });
     for (var i = 1; i < N; i++) {
-      tl.to({}, { duration: 0.6 })
+      tl.to({}, { duration: 0.5 })
         .to(state, { rot: i, duration: 1, ease: 'power2.inOut' });
     }
-    tl.to({}, { duration: 0.6 });
+    tl.to({}, { duration: 0.5 });
     render();
   }
 })();

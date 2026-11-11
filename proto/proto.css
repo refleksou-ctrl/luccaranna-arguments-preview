@@ -82,34 +82,43 @@ body:has(.args) { overflow: visible; overflow-x: clip; }
 .args-progress { position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: rgba(0, 155, 155, .15); }
 .args-progress span { display: block; height: 100%; background: var(--teal); transform: scaleY(0); transform-origin: top; }
 
-/* ---------- Option 3: 3D cube ---------- */
-.args--cube { --h: 200px; height: calc(100vh + 3 * 80vh); }
-.args--cube .args-sticky { display: flex; align-items: center; perspective: 1400px; }
-.args-stage { position: relative; height: var(--h); }
+/* ---------- Option 3: 3D cube – visually the live band, faces copied from .values-block ---------- */
+.args--cube { --h: 161px; perspective: 1600px; }
 /* GSAP sets rotateX on `transform`; `translate` pushes the box back so the front face stays the live size */
-.args-cube { position: relative; height: 100%; transform-style: preserve-3d; translate: 0 0 calc(var(--h) / -2); }
+.args-cube { position: relative; height: var(--h); transform-style: preserve-3d; translate: 0 0 calc(var(--h) / -2); }
 .args-face {
   position: absolute; inset: 0;
+  display: flex; align-items: center;
   background: var(--band);
   backface-visibility: hidden;
   transform: rotateX(calc(var(--i) * -90deg)) translateZ(calc(var(--h) / 2));
 }
-.args-face:nth-child(even) { background: #bfe9ea; }
-.args-dots { position: absolute; left: 50%; bottom: -64px; display: flex; gap: 10px; transform: translateX(-50%); }
-.args-dots span { width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--teal); transition: background .2s; }
-.args-dots span.on { background: var(--teal); }
+.args-face .container { display: flex; align-items: center; justify-content: center; }
+.args-face .large-text {
+  display: flex; align-items: center; min-height: 97px; padding-right: 50px; border-right: 1px solid var(--teal);
+  color: var(--teal); font-weight: 700; font-size: 32.447px; line-height: 40.558px; letter-spacing: 16.223px; text-transform: uppercase;
+}
+.args-face .small-text { margin-left: 50px; padding-bottom: 0; color: #222530; font-size: 15px; line-height: 25.5px; }
+@media (max-width: 1024px) {
+  .args--cube { --h: 170px; }
+  .args-face { background: var(--band-soft); }
+  .args-face .container { flex-direction: column; text-align: center; }
+  .args-face .large-text { min-height: 0; padding: 0; border: 0; margin-bottom: 10px; font-size: 20px; line-height: 26px; letter-spacing: 10.57px; }
+  .args-face .small-text { margin: 0; }
+  .args-face::after { content: ""; position: absolute; bottom: 0; left: 50%; width: 97px; height: 1px; background: #36bdc1; transform: translateX(-50%); }
+}
 
 /* ---------- reduced motion: plain list, like the live mobile view ---------- */
 .args--static { height: auto !important; padding: 30px 0 !important; background: var(--band-soft); }
 .args--static .args-sticky, .args--static .args-card { position: static; height: auto; min-height: 0; box-shadow: none; }
-.args--static .args-card__media, .args--static .args-focus__media, .args--static .args-dots, .args--static .args-progress { display: none; }
+.args--static .args-card__media, .args--static .args-focus__media, .args--static .args-progress { display: none; }
 .args--static .args-focus { display: block; height: auto; }
 .args--static .args-focus__list { height: auto; -webkit-mask-image: none; mask-image: none; }
 .args--static .args-focus__list::before { display: none; }
 .args--static .args-focus__track { position: static; text-align: center; }
-.args--static .args-stage { height: auto; }
 .args--static .args-cube { transform: none; translate: none; }
-.args--static .args-face { position: relative; transform: none; padding: 24px 0; }
+.args--static .args-cube { height: auto; }
+.args--static .args-face { position: relative; transform: none; padding: 30px 0; }
 
 /* ---------- tablet / mobile ---------- */
 @media (max-width: 1024px) {
