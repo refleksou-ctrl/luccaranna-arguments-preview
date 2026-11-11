@@ -1,6 +1,6 @@
 /* Lucca Ranna – sales-argument prototypes.
    ?option=0 (or none) keeps the live block untouched.
-   ?option=1 stacking bands, ?option=2 focus list, ?option=3 3D cube. */
+   ?option=1 stacking bands, ?option=2 3D cube, ?option=3 editorial split (the "extra"). */
 (function () {
   'use strict';
 
@@ -11,7 +11,6 @@
     { title: 'VÄRSKE MEREÕHK', text: 'Lai valik mängu- ja spordialasid', img: 'assets/luccaranna/wp-content/uploads/2021/02/11.jpg' }
   ];
   var N = ARGS.length;
-  var num = function (i) { return '0' + (i + 1) + ' / 0' + N; }; // option 2 counter
 
   var option = parseInt(new URLSearchParams(location.search).get('option'), 10) || 0;
 
@@ -47,20 +46,25 @@
   }).join('');
 
   if (option === 1) html = '<section class="args args--stack"><div class="args-box">' + bands + '</div></section>';
-  if (option === 3) html = '<section class="args args--cube"><div class="args-box">' + bands + '</div></section>';
+  if (option === 2) html = '<section class="args args--cube"><div class="args-box">' + bands + '</div></section>';
 
-  if (option === 2) {
-    html = '<section class="args args--focus"><div class="args-sticky"><div class="container args-focus">' +
-      '<div class="args-focus__list"><div class="args-focus__track">' +
-        ARGS.map(function (a) { return '<p class="args-title">' + a.title + '</p>'; }).join('') +
-      '</div></div>' +
-      '<div class="args-focus__media">' +
-        ARGS.map(function (a, i) {
-          return '<figure class="args-focus__slide"><img src="' + a.img + '" alt="">' +
-            '<figcaption><span class="args-num">' + num(i) + '</span><span class="args-desc">' + a.text + '</span></figcaption></figure>';
-        }).join('') +
+  // Option 3 (the "extra"): editorial split – full-bleed photo left, argument + index right
+  if (option === 3) {
+    var pad = function (i) { return '0' + (i + 1); };
+    html = '<section class="args args--split"><div class="args-sticky"><div class="split">' +
+      '<div class="split__media">' + ARGS.map(function (a) {
+        return '<figure class="split__slide"><img src="' + a.img + '" alt=""></figure>';
+      }).join('') + '</div>' +
+      '<div class="split__panel">' +
+        '<div class="split__count"><span class="split__clip"><span class="split__roll">' + ARGS.map(function (a, i) { return '<span>' + pad(i) + '</span>'; }).join('') +
+          '</span></span><span class="split__total">/ ' + pad(N - 1) + '</span></div>' +
+        '<div class="split__copy">' + ARGS.map(function (a) {
+          return '<div class="split__item"><p class="args-title">' + a.title + '</p><p class="args-desc">' + a.text + '</p></div>';
+        }).join('') + '</div>' +
+        '<ol class="split__index">' + ARGS.map(function (a) {
+          return '<li><span class="split__bar"><i></i></span><span class="split__label">' + a.title + '</span></li>';
+        }).join('') + '</ol>' +
       '</div>' +
-      '<div class="args-progress"><span></span></div>' +
     '</div></div></section>';
   }
 
@@ -82,7 +86,7 @@
   // GSAP + ScrollTrigger are already loaded by the live site
   window.addEventListener('load', function () {
     gsap.registerPlugin(ScrollTrigger);
-    ({ 1: stack, 2: focus, 3: cube })[option](section);
+    ({ 1: stack, 2: cube, 3: split })[option](section);
     ScrollTrigger.refresh();
   });
 
@@ -113,30 +117,43 @@
     tl.to({}, { duration: 0.25 });
   }
 
-  // Option 2: one scrubbed timeline – titles glide through a focus line, photos wipe in.
-  function focus(el) {
-    var titles = gsap.utils.toArray('.args-title', el);
-    var slides = gsap.utils.toArray('.args-focus__slide', el);
-    var track = el.querySelector('.args-focus__track');
+  // Option 3: scrubbed editorial sequence. Photo wipes up with a slow settle, copy swaps with a
+  // short blur (masks the crossfade), counter rolls, index bars fill while each argument is on.
+  var EASE_MOVE = 'cubic-bezier(0.77, 0, 0.175, 1)'; // strong ease-in-out for on-screen movement
+  function split(el) {
+    var slides = gsap.utils.toArray('.split__slide', el);
+    var items = gsap.utils.toArray('.split__item', el);
+    var labels = gsap.utils.toArray('.split__index li', el);
+    var bars = gsap.utils.toArray('.split__bar i', el);
+    var roll = el.querySelector('.split__roll');
 
-    gsap.set(titles, { opacity: 0.2 });
-    gsap.set(titles[0], { opacity: 1 });
     gsap.set(slides.slice(1), { clipPath: 'inset(100% 0% 0% 0%)' });
+    gsap.set(items.slice(1), { autoAlpha: 0, y: 24, filter: 'blur(6px)' });
+    labels[0].classList.add('on');
 
+    var HOLD = 0.6;
+    var STEP = HOLD + 1; // timeline time per argument: one transition + one hold
     var tl = gsap.timeline({
-      defaults: { ease: 'power2.inOut', duration: 1 },
-      scrollTrigger: { trigger: el, start: function () { return 'top ' + hdr(); }, end: 'bottom bottom', scrub: 0.6, invalidateOnRefresh: true }
+      scrollTrigger: { trigger: el, start: function () { return 'top ' + hdr(); }, end: 'bottom bottom', scrub: 0.3 },
+      onUpdate: function () {
+        // label switches halfway through each transition
+        var active = Math.min(N - 1, Math.floor((tl.time() + 0.5) / STEP));
+        labels.forEach(function (l, i) { l.classList.toggle('on', i === active); });
+      }
+    });
+    // bar i fills while argument i is on screen (linear: it is a progress indicator)
+    bars.forEach(function (b, i) {
+      tl.fromTo(b, { scaleX: 0 }, { scaleX: 1, ease: 'none', duration: STEP }, i * STEP);
     });
     for (var i = 1; i < N; i++) {
-      tl.to({}, { duration: 0.6 }) // hold: each argument rests readable for a beat
-        .to(track, { y: (function (k) { return function () { return -titles[k].offsetTop; }; })(i) }, '>')
-        .to(titles[i - 1], { opacity: 0.2 }, '<')
-        .to(titles[i], { opacity: 1 }, '<')
-        .to(slides[i], { clipPath: 'inset(0% 0% 0% 0%)' }, '<')
-        .fromTo(slides[i].querySelector('img'), { scale: 1.15 }, { scale: 1 }, '<');
+      var t = i * STEP - 1; // transition i ends exactly where bar i starts
+      tl.to(slides[i], { clipPath: 'inset(0% 0% 0% 0%)', ease: EASE_MOVE, duration: 1 }, t)
+        .fromTo(slides[i].querySelector('img'), { scale: 1.12 }, { scale: 1, ease: 'power3.out', duration: 1.4 }, t)
+        .to(slides[i - 1].querySelector('img'), { scale: 0.96, ease: EASE_MOVE, duration: 1 }, t)
+        .to(items[i - 1], { autoAlpha: 0, y: -24, filter: 'blur(6px)', ease: 'power2.in', duration: 0.4 }, t)
+        .to(items[i], { autoAlpha: 1, y: 0, filter: 'blur(0px)', ease: 'power3.out', duration: 0.6 }, t + 0.35)
+        .to(roll, { yPercent: -100 * i / N, ease: EASE_MOVE, duration: 1 }, t);
     }
-    tl.to({}, { duration: 0.6 });
-    tl.to(el.querySelector('.args-progress span'), { scaleY: 1, ease: 'none', duration: tl.duration() }, 0);
   }
 
   // Option 3: four bands on the faces of a box that tumbles forward with scroll.
