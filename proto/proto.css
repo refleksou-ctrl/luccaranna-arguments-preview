@@ -8,13 +8,16 @@ body:has(.args) { overflow: visible; overflow-x: clip; }
   --teal-light: #35bcc0;
   --band: #cdeeef;          /* = rgba(53,188,192,.25) on white, the live band colour */
   --band-soft: #eaf8f8;
-  --tab: 100px;             /* option 1: height of each stacked band */
   --hdr: 102px;             /* fixed site header, measured in proto.js */
   position: relative;
   font-family: "NeueHaasUnicaWeb", sans-serif;
 }
 .args p { margin: 0; }
 .args img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+/* ---------- live band (options 1 + 3): copied from .values-block ---------- */
+.args--stack, .args--cube { --h: 161px; }
+.args-box { position: relative; height: var(--h); }
 
 /* shared type – copied from the live .values-block */
 .args-title {
@@ -27,38 +30,6 @@ body:has(.args) { overflow: visible; overflow-x: clip; }
 }
 .args-desc { color: #222530; font-size: 15px; line-height: 25.5px; }
 .args-num { color: var(--teal); font-size: 13px; letter-spacing: 2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-
-/* band = the live layout: TITLE | description */
-.args-band__inner { display: flex; align-items: center; justify-content: center; height: 100%; gap: 0; }
-.args-band__inner .args-num { margin-right: 40px; white-space: nowrap; }
-.args-band__inner .args-title { white-space: nowrap; flex-shrink: 0; }
-.args-band__inner .args-title { display: flex; align-items: center; min-height: 64px; padding-right: 50px; border-right: 1px solid var(--teal); }
-.args-band__inner .args-desc { margin-left: 50px; max-width: 420px; }
-
-/* ---------- Option 1: stacking cards ---------- */
-/* exit as one stack: bottom margins keep each card a band apart from the container end;
-   matching negative top margins collapse them so the flow positions stay unchanged */
-.args--stack .args-card { margin-bottom: calc((3 - var(--i)) * var(--tab)); }
-.args--stack .args-card + .args-card { margin-top: calc((4 - var(--i)) * var(--tab) * -1); }
-/* spacer (not padding: sticky ignores padding) holds the finished stack for a moment */
-.args--stack .args-hold { height: 35vh; }
-.args--stack .args-card {
-  position: sticky;
-  top: calc(var(--hdr) + var(--i) * var(--tab));
-  height: calc(100vh - var(--hdr) - 3 * var(--tab));
-  height: calc(100svh - var(--hdr) - 3 * var(--tab));
-  min-height: 420px;
-  display: flex;
-  flex-direction: column;
-  background: #fff;
-  box-shadow: 0 -12px 30px -18px rgba(0, 60, 60, .35);
-}
-.args--stack .args-band { flex: 0 0 var(--tab); background: var(--band); border-top: 1px solid rgba(0, 155, 155, .35); }
-.args--stack .args-card:nth-child(2) .args-band { background: #bfe9ea; }
-.args--stack .args-card:nth-child(3) .args-band { background: #b0e3e5; }
-.args--stack .args-card:nth-child(4) .args-band { background: #a2dee0; }
-.args--stack .args-card__media { flex: 1; min-height: 0; padding-top: 24px; padding-bottom: 24px; overflow: hidden; transform-origin: 50% 0; }
-.args--stack .args-card__media img { height: 115%; }
 
 /* ---------- Option 2: focus list ---------- */
 .args--focus { height: calc(100vh + 3 * 80vh); background: var(--band-soft); }
@@ -82,17 +53,16 @@ body:has(.args) { overflow: visible; overflow-x: clip; }
 .args-progress { position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: rgba(0, 155, 155, .15); }
 .args-progress span { display: block; height: 100%; background: var(--teal); transform: scaleY(0); transform-origin: top; }
 
-/* ---------- Option 3: 3D cube – visually the live band, faces copied from .values-block ---------- */
-.args--cube { --h: 161px; perspective: 1600px; }
+/* ---------- Option 1: bands stacking on top ---------- */
+.args--stack .args-box { overflow: hidden; }
+
+/* ---------- Option 3: 3D cube ---------- */
+.args--cube { perspective: 1600px; }
 /* GSAP sets rotateX on `transform`; `translate` pushes the box back so the front face stays the live size */
-.args-cube { position: relative; height: var(--h); transform-style: preserve-3d; translate: 0 0 calc(var(--h) / -2); }
-.args-face {
-  position: absolute; inset: 0;
-  display: flex; align-items: center;
-  background: var(--band);
-  backface-visibility: hidden;
-  transform: rotateX(calc(var(--i) * -90deg)) translateZ(calc(var(--h) / 2));
-}
+.args--cube .args-box { transform-style: preserve-3d; translate: 0 0 calc(var(--h) / -2); }
+.args--cube .args-face { backface-visibility: hidden; transform: rotateX(calc(var(--i) * -90deg)) translateZ(calc(var(--h) / 2)); }
+
+.args-face { position: absolute; inset: 0; display: flex; align-items: center; background: var(--band); }
 .args-face .container { display: flex; align-items: center; justify-content: center; }
 .args-face .large-text {
   display: flex; align-items: center; min-height: 97px; padding-right: 50px; border-right: 1px solid var(--teal);
@@ -100,7 +70,7 @@ body:has(.args) { overflow: visible; overflow-x: clip; }
 }
 .args-face .small-text { margin-left: 50px; padding-bottom: 0; color: #222530; font-size: 15px; line-height: 25.5px; }
 @media (max-width: 1024px) {
-  .args--cube { --h: 170px; }
+  .args--stack, .args--cube { --h: 170px; }
   .args-face { background: var(--band-soft); }
   .args-face .container { flex-direction: column; text-align: center; }
   .args-face .large-text { min-height: 0; padding: 0; border: 0; margin-bottom: 10px; font-size: 20px; line-height: 26px; letter-spacing: 10.57px; }
@@ -110,30 +80,18 @@ body:has(.args) { overflow: visible; overflow-x: clip; }
 
 /* ---------- reduced motion: plain list, like the live mobile view ---------- */
 .args--static { height: auto !important; padding: 30px 0 !important; background: var(--band-soft); }
-.args--static .args-sticky, .args--static .args-card { position: static; height: auto; min-height: 0; box-shadow: none; }
-.args--static .args-card__media, .args--static .args-focus__media, .args--static .args-progress { display: none; }
+.args--static .args-sticky { position: static; height: auto; }
+.args--static .args-focus__media, .args--static .args-progress { display: none; }
 .args--static .args-focus { display: block; height: auto; }
 .args--static .args-focus__list { height: auto; -webkit-mask-image: none; mask-image: none; }
 .args--static .args-focus__list::before { display: none; }
 .args--static .args-focus__track { position: static; text-align: center; }
-.args--static .args-cube { transform: none; translate: none; }
-.args--static .args-cube { height: auto; }
+.args--static .args-box { height: auto; translate: none; overflow: visible; }
 .args--static .args-face { position: relative; transform: none; padding: 30px 0; }
 
 /* ---------- tablet / mobile ---------- */
 @media (max-width: 1024px) {
-  .args { --tab: 76px; }
   .args-title { font-size: 20px; line-height: 26px; letter-spacing: 10.57px; }
-  .args-band__inner { flex-direction: column; text-align: center; }
-  .args-band__inner .args-num { margin: 0 0 6px; }
-  .args-band__inner .args-title { min-height: 0; padding: 0; border: 0; }
-  .args-band__inner .args-desc { margin: 8px 0 0; }
-
-  /* option 1: band shows number + title only; description moves under the photo */
-  .args--stack .args-band__inner { flex-direction: row; justify-content: flex-start; text-align: left; }
-  .args--stack .args-band__inner .args-num { margin: 0 16px 0 0; }
-  .args--stack .args-band__inner .args-desc { display: none; }
-  .args--stack .args-card__media { padding-top: 16px; padding-bottom: 16px; }
 
   /* option 2: titles on top, photo below */
   .args-focus { grid-template-columns: 1fr; grid-template-rows: 120px 1fr; gap: 16px; height: 86vh; height: 86svh; }
@@ -141,13 +99,9 @@ body:has(.args) { overflow: visible; overflow-x: clip; }
   .args-focus__track .args-title { padding-bottom: 34px; white-space: normal; }
   .args-focus__slide figcaption { max-width: none; right: 0; padding: 14px 18px; gap: 14px; }
 
-  /* option 3: taller faces for stacked text */
-  .args--cube { --h: 220px; }
 }
 @media (max-width: 480px) {
   .args-title { letter-spacing: 6px; }
-  .args .args-band__inner .args-title { white-space: normal; }
-  .args--stack .args-title { font-size: 16px; line-height: 20px; letter-spacing: 5px; }
   .args-focus__track .args-title { font-size: 18px; line-height: 24px; letter-spacing: 6px; padding-bottom: 30px; }
   .args-focus__track { left: 48px; }
   .args-focus__list::before { width: 32px; }

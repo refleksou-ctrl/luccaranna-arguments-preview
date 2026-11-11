@@ -1,6 +1,6 @@
 /* Lucca Ranna – sales-argument prototypes.
    ?option=0 (or none) keeps the live block untouched.
-   ?option=1 stacking cards, ?option=2 focus list, ?option=3 3D cube. */
+   ?option=1 stacking bands, ?option=2 focus list, ?option=3 3D cube. */
 (function () {
   'use strict';
 
@@ -11,7 +11,7 @@
     { title: 'VÄRSKE MEREÕHK', text: 'Lai valik mängu- ja spordialasid', img: 'assets/luccaranna/wp-content/uploads/2021/02/11.jpg' }
   ];
   var N = ARGS.length;
-  var num = function (i) { return '0' + (i + 1) + ' / 0' + N; };
+  var num = function (i) { return '0' + (i + 1) + ' / 0' + N; }; // option 2 counter
 
   var option = parseInt(new URLSearchParams(location.search).get('option'), 10) || 0;
 
@@ -38,18 +38,16 @@
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var html = '';
 
-  if (option === 1) {
-    html = '<section class="args args--stack">' + ARGS.map(function (a, i) {
-      return '<div class="args-card" style="--i:' + i + '">' +
-        '<div class="args-band"><div class="container args-band__inner">' +
-          '<span class="args-num">' + num(i) + '</span>' +
-          '<p class="args-title">' + a.title + '</p>' +
-          '<p class="args-desc">' + a.text + '</p>' +
-        '</div></div>' +
-        '<div class="container args-card__media"><img src="' + a.img + '" alt=""></div>' +
-      '</div>';
-    }).join('') + '<div class="args-hold"></div></section>';
-  }
+  // live band markup (options 1 and 3 only change how the four bands move)
+  var bands = ARGS.map(function (a, i) {
+    return '<div class="args-face" style="--i:' + i + '"><div class="container">' +
+      '<p class="large-text">' + a.title + '</p>' +
+      '<p class="small-text">' + a.text + '</p>' +
+    '</div></div>';
+  }).join('');
+
+  if (option === 1) html = '<section class="args args--stack"><div class="args-box">' + bands + '</div></section>';
+  if (option === 3) html = '<section class="args args--cube"><div class="args-box">' + bands + '</div></section>';
 
   if (option === 2) {
     html = '<section class="args args--focus"><div class="args-sticky"><div class="container args-focus">' +
@@ -64,16 +62,6 @@
       '</div>' +
       '<div class="args-progress"><span></span></div>' +
     '</div></div></section>';
-  }
-
-  if (option === 3) {
-    // same markup + look as the live band; only the faces sit on a box
-    html = '<section class="args args--cube"><div class="args-cube">' + ARGS.map(function (a, i) {
-      return '<div class="args-face" style="--i:' + i + '"><div class="container">' +
-        '<p class="large-text">' + a.title + '</p>' +
-        '<p class="small-text">' + a.text + '</p>' +
-      '</div></div>';
-    }).join('') + '</div></section>';
   }
 
   var wrap = document.createElement('div');
@@ -98,25 +86,31 @@
     ScrollTrigger.refresh();
   });
 
-  // Option 1: covered cards recede slightly; photos drift (parallax) as each card slides in
+  // Options 1 + 3 pin the page like the live site (band held mid-screen), but the change
+  // between arguments is scrubbed to the scroll. SCROLL_PER_STEP = scroll distance per change,
+  // as a share of the viewport height – lower = more sensitive.
+  var SCROLL_PER_STEP = 0.35;
+  function pinned(el, extra) {
+    return gsap.timeline(Object.assign({
+      scrollTrigger: {
+        trigger: el, start: 'center center',
+        end: function () { return '+=' + (N - 1) * innerHeight * SCROLL_PER_STEP; },
+        pin: '#content', pinSpacing: true, anticipatePin: 1, scrub: 0.3
+      }
+    }, extra));
+  }
+
+  // Option 1: each new band materialises (fades + rises) on top of the previous one.
   function stack(el) {
-    var cards = gsap.utils.toArray('.args-card', el);
-    // Sticky elements confuse ScrollTrigger's measuring, so compute scroll positions from the
-    // (non-sticky) section: card i sits i card-heights down and sticks at its CSS `top`.
-    var natTop = function (i) { return el.getBoundingClientRect().top + scrollY + i * cards[0].offsetHeight; };
-    var enters = function (i) { return function () { return natTop(i) - innerHeight; }; };
-    var sticks = function (i) { return function () { return natTop(i) - parseFloat(getComputedStyle(cards[i]).top); }; };
-    cards.forEach(function (card, i) {
-      gsap.fromTo(card.querySelector('img'), { yPercent: -12 }, {
-        yPercent: 0, ease: 'none',
-        scrollTrigger: { start: enters(i), end: sticks(i), scrub: true }
-      });
-      if (i === cards.length - 1) return;
-      gsap.to(card.querySelector('.args-card__media'), {
-        scale: 0.94, opacity: 0.35, ease: 'none',
-        scrollTrigger: { start: enters(i + 1), end: sticks(i + 1), scrub: true }
-      });
-    });
+    var faces = gsap.utils.toArray('.args-face', el);
+    gsap.set(faces.slice(1), { autoAlpha: 0, yPercent: 60 });
+    var tl = pinned(el);
+    for (var i = 1; i < N; i++) {
+      var prev = faces[i - 1].querySelector('.container');
+      tl.to(prev, { autoAlpha: 0, yPercent: -25, duration: 0.5, ease: 'power1.in' }, i === 1 ? 0 : '>0.15')
+        .to(faces[i], { autoAlpha: 1, yPercent: 0, duration: 1, ease: 'power2.out' }, '<0.1');
+    }
+    tl.to({}, { duration: 0.25 });
   }
 
   // Option 2: one scrubbed timeline – titles glide through a focus line, photos wipe in.
@@ -147,7 +141,7 @@
 
   // Option 3: four bands on the faces of a box that tumbles forward with scroll.
   function cube(el) {
-    var box = el.querySelector('.args-cube');
+    var box = el.querySelector('.args-box');
     var faces = gsap.utils.toArray('.args-face', el);
     var state = { rot: 0 };
 
@@ -161,21 +155,11 @@
       });
     }
 
-    // same pin as the live site (whole page holds with the band centred),
-    // but rotation follows the scroll instead of snapping between fades
-    var tl = gsap.timeline({
-      onUpdate: render,
-      scrollTrigger: {
-        trigger: el, start: 'center center',
-        end: function () { return '+=' + N * innerHeight * 0.7; },
-        pin: '#content', pinSpacing: true, anticipatePin: 1, scrub: 0.8
-      }
-    });
+    var tl = pinned(el, { onUpdate: render });
     for (var i = 1; i < N; i++) {
-      tl.to({}, { duration: 0.5 })
-        .to(state, { rot: i, duration: 1, ease: 'power2.inOut' });
+      tl.to(state, { rot: i, duration: 1, ease: 'power2.inOut' }, i === 1 ? 0 : '>0.15');
     }
-    tl.to({}, { duration: 0.5 });
+    tl.to({}, { duration: 0.25 });
     render();
   }
 })();
