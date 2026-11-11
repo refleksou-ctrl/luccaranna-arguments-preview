@@ -20,6 +20,16 @@
     if (+a.getAttribute('data-option') === option) a.parentNode.classList.add('current-menu-item');
   });
 
+  // menu links reload with #arguments; images above load late and shift the jump, so redo it after load
+  window.addEventListener('load', function () {
+    if (location.hash !== '#arguments') return;
+    setTimeout(function () {
+      var a = document.getElementById('arguments');
+      var hdrH = (document.querySelector('.header_container') || {}).offsetHeight || 0;
+      window.scrollTo({ top: a.getBoundingClientRect().top + scrollY - hdrH, behavior: 'instant' });
+    }, 50);
+  });
+
   if (!option) return;
 
   var block = document.querySelector('.values-block');
