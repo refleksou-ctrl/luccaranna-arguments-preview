@@ -73,7 +73,6 @@ body:has(.args) { overflow: visible; overflow-x: clip; }
   .args-face .container { flex-direction: column; text-align: center; }
   .args-face .large-text { min-height: 0; padding: 0; border: 0; margin-bottom: 10px; font-size: 20px; line-height: 26px; letter-spacing: 10.57px; }
   .args-face .small-text { margin: 0; }
-  .args-face::after { content: ""; position: absolute; bottom: 0; left: 50%; width: 97px; height: 1px; background: #36bdc1; transform: translateX(-50%); }
 }
 
 /* ---------- reduced motion: plain list, like the live mobile view ---------- */
@@ -95,7 +94,10 @@ body:has(.args) { overflow: visible; overflow-x: clip; }
   .split { grid-template-columns: 1fr; grid-template-rows: 46% 1fr; }
   .split__panel { padding: 20px 20px 24px; }
   .split__item .args-desc { font-size: 15px; }
-  .split__label { display: none; }
+  /* four columns are too narrow for the labels on phones: 2 × 2 grid instead */
+  .split__index { grid-template-columns: repeat(2, 1fr); gap: 4px 20px; }
+  .split__index button { padding: 8px 0; }
+  .split__label { margin-top: 10px; font-size: 10px; letter-spacing: 1.5px; }
 }
 @media (max-width: 480px) {
   .args-title { letter-spacing: 6px; }
