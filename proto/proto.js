@@ -20,8 +20,12 @@
   });
 
   // every option opens at the top of the page so the viewer scrolls into the block
+  // (again after load and on back/forward-cache restores, since the option 2 page pin can re-measure late)
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-  window.scrollTo(0, 0);
+  var toTop = function () { window.scrollTo({ top: 0, behavior: 'instant' }); };
+  toTop();
+  window.addEventListener('load', function () { setTimeout(toTop, 0); });
+  window.addEventListener('pageshow', function (e) { if (e.persisted) toTop(); });
 
   if (!option) return;
 
