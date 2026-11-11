@@ -50,19 +50,16 @@
 
   // Option 3 (the "extra"): editorial split – full-bleed photo left, argument + index right
   if (option === 3) {
-    var pad = function (i) { return '0' + (i + 1); };
     html = '<section class="args args--split"><div class="args-sticky"><div class="split">' +
       '<div class="split__media">' + ARGS.map(function (a) {
         return '<figure class="split__slide"><img src="' + a.img + '" alt=""></figure>';
       }).join('') + '</div>' +
       '<div class="split__panel">' +
-        '<div class="split__count"><span class="split__clip"><span class="split__roll">' + ARGS.map(function (a, i) { return '<span>' + pad(i) + '</span>'; }).join('') +
-          '</span></span><span class="split__total">/ ' + pad(N - 1) + '</span></div>' +
         '<div class="split__copy">' + ARGS.map(function (a) {
           return '<div class="split__item"><p class="args-title">' + a.title + '</p><p class="args-desc">' + a.text + '</p></div>';
         }).join('') + '</div>' +
         '<ol class="split__index">' + ARGS.map(function (a) {
-          return '<li><span class="split__bar"><i></i></span><span class="split__label">' + a.title + '</span></li>';
+          return '<li><button type="button"><span class="split__bar"><i></i></span><span class="split__label">' + a.title + '</span></button></li>';
         }).join('') + '</ol>' +
       '</div>' +
     '</div></div></section>';
@@ -90,7 +87,7 @@
     ScrollTrigger.refresh();
   });
 
-  // Options 1 + 3 pin the page like the live site (band held mid-screen), but the change
+  // Options 1 + 2 pin the page like the live site (band held mid-screen), but the change
   // between arguments is scrubbed to the scroll. SCROLL_PER_STEP = scroll distance per change,
   // as a share of the viewport height – lower = more sensitive.
   var SCROLL_PER_STEP = 0.35;
@@ -118,14 +115,13 @@
   }
 
   // Option 3: scrubbed editorial sequence. Photo wipes up with a slow settle, copy swaps with a
-  // short blur (masks the crossfade), counter rolls, index bars fill while each argument is on.
+  // short blur (masks the crossfade), index tabs fill while each argument is on and jump on click.
   var EASE_MOVE = 'cubic-bezier(0.77, 0, 0.175, 1)'; // strong ease-in-out for on-screen movement
   function split(el) {
     var slides = gsap.utils.toArray('.split__slide', el);
     var items = gsap.utils.toArray('.split__item', el);
     var labels = gsap.utils.toArray('.split__index li', el);
     var bars = gsap.utils.toArray('.split__bar i', el);
-    var roll = el.querySelector('.split__roll');
 
     gsap.set(slides.slice(1), { clipPath: 'inset(100% 0% 0% 0%)' });
     gsap.set(items.slice(1), { autoAlpha: 0, y: 24, filter: 'blur(6px)' });
@@ -151,12 +147,20 @@
         .fromTo(slides[i].querySelector('img'), { scale: 1.12 }, { scale: 1, ease: 'power3.out', duration: 1.4 }, t)
         .to(slides[i - 1].querySelector('img'), { scale: 0.96, ease: EASE_MOVE, duration: 1 }, t)
         .to(items[i - 1], { autoAlpha: 0, y: -24, filter: 'blur(6px)', ease: 'power2.in', duration: 0.4 }, t)
-        .to(items[i], { autoAlpha: 1, y: 0, filter: 'blur(0px)', ease: 'power3.out', duration: 0.6 }, t + 0.35)
-        .to(roll, { yPercent: -100 * i / N, ease: EASE_MOVE, duration: 1 }, t);
+        .to(items[i], { autoAlpha: 1, y: 0, filter: 'blur(0px)', ease: 'power3.out', duration: 0.6 }, t + 0.35);
     }
+
+    // clicking a tab scrolls to the middle of that argument's resting moment
+    labels.forEach(function (l, i) {
+      l.querySelector('button').addEventListener('click', function () {
+        var st = tl.scrollTrigger;
+        var at = (i * STEP + HOLD / 2) / tl.duration();
+        window.scrollTo({ top: st.start + (st.end - st.start) * at, behavior: 'smooth' });
+      });
+    });
   }
 
-  // Option 3: four bands on the faces of a box that tumbles forward with scroll.
+  // Option 2: four bands on the faces of a box that tumbles forward with scroll.
   function cube(el) {
     var box = el.querySelector('.args-box');
     var faces = gsap.utils.toArray('.args-face', el);
