@@ -94,20 +94,34 @@
       scrollTrigger: {
         trigger: el, start: 'center center',
         end: function () { return '+=' + (N - 1) * innerHeight * SCROLL_PER_STEP; },
-        pin: '#content', pinSpacing: true, anticipatePin: 1, scrub: 0.3
+        pin: '#content', pinSpacing: true, anticipatePin: 1, scrub: 0.3, invalidateOnRefresh: true
       }
     }, extra));
   }
 
-  // Option 1: each new band materialises (fades + rises) on top of the previous one.
+  // Option 1: each band arrives in its own deeper teal, sweeps up over the previous one,
+  // then settles into the live light blue (so old and new are clearly separated mid-change).
+  var STACK_SHADES = ['#b5e6e7', '#9fdfe1', '#86d6d9', '#6ccdd0']; // one start colour per argument
   function stack(el) {
     var faces = gsap.utils.toArray('.args-face', el);
-    gsap.set(faces.slice(1), { autoAlpha: 0, yPercent: 60 });
+    var settled = function () { return getComputedStyle(el).getPropertyValue('--settled').trim(); };
+    gsap.set(faces.slice(1), { yPercent: 100 });
+    gsap.set(faces.map(function (f) { return f.querySelector('.container'); }).slice(1), { autoAlpha: 0, y: 20 });
+
+    // first band: tinted while the block scrolls into view, light blue by the time it pins
+    gsap.fromTo(faces[0], { backgroundColor: STACK_SHADES[0] }, {
+      backgroundColor: settled, ease: 'none',
+      scrollTrigger: { trigger: el, start: 'top bottom', end: 'center center', scrub: true, invalidateOnRefresh: true }
+    });
+
     var tl = pinned(el);
     for (var i = 1; i < N; i++) {
       var prev = faces[i - 1].querySelector('.container');
-      tl.to(prev, { autoAlpha: 0, yPercent: -25, duration: 0.5, ease: 'power1.in' }, i === 1 ? 0 : '>0.15')
-        .to(faces[i], { autoAlpha: 1, yPercent: 0, duration: 1, ease: 'power2.out' }, '<0.1');
+      var next = faces[i].querySelector('.container');
+      tl.to(prev, { autoAlpha: 0, yPercent: -25, duration: 0.45, ease: 'power1.in' }, i === 1 ? 0 : '>0.15')
+        .fromTo(faces[i], { backgroundColor: STACK_SHADES[i] }, { yPercent: 0, duration: 0.8, ease: 'power3.out' }, '<')
+        .to(next, { autoAlpha: 1, y: 0, duration: 0.5, ease: 'power2.out' }, '<0.35')
+        .to(faces[i], { backgroundColor: settled, duration: 0.6, ease: 'power1.inOut' }, '<0.1');
     }
     tl.to({}, { duration: 0.25 });
   }

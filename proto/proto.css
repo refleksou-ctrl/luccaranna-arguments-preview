@@ -52,6 +52,8 @@ body:has(.args) { overflow: visible; overflow-x: clip; }
 .split__index button:focus-visible { outline: 2px solid var(--teal); outline-offset: 4px; }
 
 /* ---------- Option 1: bands stacking on top ---------- */
+/* --settled = the live band colour each band fades into (desktop / mobile differ) */
+.args--stack { --settled: var(--band); }
 .args--stack .args-box { overflow: hidden; }
 
 /* ---------- Option 3: 3D cube ---------- */
@@ -70,6 +72,7 @@ body:has(.args) { overflow: visible; overflow-x: clip; }
 @media (max-width: 1024px) {
   .args--stack, .args--cube { --h: 170px; }
   .args-face { background: var(--band-soft); }
+  .args--stack { --settled: var(--band-soft); }
   .args-face .container { flex-direction: column; text-align: center; }
   .args-face .large-text { min-height: 0; padding: 0; border: 0; margin-bottom: 10px; font-size: 20px; line-height: 26px; letter-spacing: 10.57px; }
   .args-face .small-text { margin: 0; }
