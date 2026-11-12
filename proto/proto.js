@@ -1,6 +1,7 @@
 /* Lucca Ranna – sales-argument prototypes.
    ?option=0 (or none) keeps the live block untouched.
-   ?option=1 stacking bands, ?option=2 3D cube, ?option=3 editorial split (the "extra"). */
+   ?option=1 stacking bands, ?option=2 3D cube, ?option=3 editorial split (the "extra"),
+   ?option=4 sideways track, ?option=5 masked roll. */
 (function () {
   'use strict';
 
@@ -45,6 +46,20 @@
 
   if (option === 1) html = '<section class="args args--stack"><div class="args-box">' + bands + '</div></section>';
   if (option === 2) html = '<section class="args args--cube"><div class="args-box">' + bands + '</div></section>';
+
+  // Option 4: the bands side by side in one track that slides sideways; progress line underneath
+  if (option === 4) html = '<section class="args args--track"><div class="args-box"><div class="track" style="--n:' + N + '">' +
+    bands + '</div><span class="track-progress"></span></div></section>';
+
+  // Option 5: one still band; title and description roll up through invisible windows
+  if (option === 5) {
+    var roll = function (key) { return '<span class="roll">' + ARGS.map(function (a) { return '<span>' + a[key] + '</span>'; }).join('') + '</span>'; };
+    html = reduce // no roll without motion: fall back to the plain bands
+      ? '<section class="args args--stack"><div class="args-box">' + bands + '</div></section>'
+      : '<section class="args args--roll"><div class="args-box"><div class="args-face"><div class="container">' +
+          '<p class="large-text">' + roll('title') + '</p><p class="small-text">' + roll('text') + '</p>' +
+        '</div></div></div></section>';
+  }
 
   // Option 3 (the "extra"): editorial split – full-bleed photo left, argument + index right
   if (option === 3) {
@@ -94,11 +109,11 @@
   // GSAP + ScrollTrigger are already loaded by the live site
   window.addEventListener('load', function () {
     gsap.registerPlugin(ScrollTrigger);
-    ({ 1: stack, 2: cube, 3: split })[option](section);
+    ({ 1: stack, 2: cube, 3: split, 4: track, 5: roller })[option](section);
     ScrollTrigger.refresh();
   });
 
-  // Options 1 + 2 pin the page like the live site (band held mid-screen), but the change
+  // Options 1, 2, 4, 5 pin the page like the live site (band held mid-screen), but the change
   // between arguments is scrubbed to the scroll. SCROLL_PER_STEP = scroll distance per change,
   // as a share of the viewport height – lower = more sensitive.
   var SCROLL_PER_STEP = 0.35;
@@ -182,6 +197,34 @@
         window.scrollTo({ top: st.start + (st.end - st.start) * at, behavior: 'smooth' });
       });
     });
+  }
+
+  // Option 4: the track slides one band-width per argument (strong in-out so each rests centred);
+  // the progress line fills linearly across the whole sequence.
+  function track(el) {
+    var tl = pinned(el);
+    var strip = el.querySelector('.track');
+    for (var i = 1; i < N; i++) {
+      tl.to(strip, { xPercent: -100 * i / N, duration: 1, ease: EASE_MOVE }, i === 1 ? 0 : '>0.15');
+    }
+    tl.to({}, { duration: 0.25 });
+    tl.fromTo(el.querySelector('.track-progress'), { scaleX: 1 / N }, { scaleX: 1, ease: 'none', duration: tl.duration() }, 0);
+  }
+
+  // Option 5: the band stays still; the title rolls up through its window, the description a beat later.
+  function roller(el) {
+    var titles = gsap.utils.toArray('.large-text .roll > span', el);
+    var texts = gsap.utils.toArray('.small-text .roll > span', el);
+    gsap.set(titles.slice(1).concat(texts.slice(1)), { yPercent: 110 });
+    var tl = pinned(el);
+    for (var i = 1; i < N; i++) {
+      var at = i === 1 ? 0 : '>0.15';
+      tl.to(titles[i - 1], { yPercent: -110, duration: 0.8, ease: EASE_MOVE }, at)
+        .to(titles[i], { yPercent: 0, duration: 0.8, ease: EASE_MOVE }, '<')
+        .to(texts[i - 1], { yPercent: -110, duration: 0.8, ease: EASE_MOVE }, '<0.15')
+        .to(texts[i], { yPercent: 0, duration: 0.8, ease: EASE_MOVE }, '<');
+    }
+    tl.to({}, { duration: 0.25 });
   }
 
   // Option 2: four bands on the faces of a box that tumbles forward with scroll.
