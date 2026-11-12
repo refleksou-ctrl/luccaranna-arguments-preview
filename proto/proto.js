@@ -101,10 +101,18 @@
 
   // Option 1: each band arrives in its own deeper teal, sweeps up over the previous one,
   // then settles into the live light blue (so old and new are clearly separated mid-change).
-  var STACK_SHADES = ['#b5e6e7', '#9fdfe1', '#86d6d9', '#6ccdd0']; // one start colour per argument
+  // start colour = settled colour mixed with this much brand teal (one value per argument)
+  var STACK_TINT = [0.05, 0.07, 0.09, 0.11];
   function stack(el) {
     var faces = gsap.utils.toArray('.args-face', el);
     var settled = function () { return getComputedStyle(el).getPropertyValue('--settled').trim(); };
+    var shade = function (i) {
+      return function () {
+        var c = gsap.utils.splitColor(settled()), teal = [0, 155, 155], t = STACK_TINT[i];
+        return 'rgb(' + c.slice(0, 3).map(function (v, k) { return Math.round(v + (teal[k] - v) * t); }).join(',') + ')';
+      };
+    };
+    var STACK_SHADES = [0, 1, 2, 3].map(shade);
     gsap.set(faces.slice(1), { yPercent: 100 });
     gsap.set(faces.map(function (f) { return f.querySelector('.container'); }).slice(1), { autoAlpha: 0, y: 20 });
 
