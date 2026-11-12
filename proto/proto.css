@@ -67,8 +67,6 @@ header .menu_part a[data-option] { white-space: nowrap; }
 .args--track .args-face { position: relative; flex: 1 1 0; }
 .track-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--teal); transform: scaleX(.25); transform-origin: left; }
 
-.args-face { backface-visibility: hidden; transform: rotateX(calc(var(--i) * -90deg)) translateZ(calc(var(--h) / 2)); }
-
 .args-face { position: absolute; inset: 0; display: flex; align-items: center; background: var(--band); }
 .args-face .container { position: relative; display: flex; align-items: center; justify-content: center; }
 /* overlay under the text: teal tint for option 1 */
