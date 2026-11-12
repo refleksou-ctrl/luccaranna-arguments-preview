@@ -37,7 +37,7 @@
 
   // live band markup (options 1 and 3 only change how the four bands move)
   var bands = ARGS.map(function (a, i) {
-    return '<div class="args-face" style="--i:' + i + '"><div class="container">' +
+    return '<div class="args-face" style="--i:' + i + '"><i class="args-shade"></i><div class="container">' +
       '<p class="large-text">' + a.title + '</p>' +
       '<p class="small-text">' + a.text + '</p>' +
     '</div></div>';
@@ -78,6 +78,19 @@
 
   if (reduce) return;
 
+  // Custom curves. GSAP has no cubic-bezier() support without its CustomEase plugin (strings like
+  // 'cubic-bezier(...)' silently fall back to the default), so solve the bezier here.
+  function bezier(x1, y1, x2, y2) {
+    var at = function (t, a, b) { return ((1 - 3 * b + 3 * a) * t + (3 * b - 6 * a)) * t * t + 3 * a * t; };
+    return function (x) {
+      var lo = 0, hi = 1, t = x;
+      for (var k = 0; k < 20; k++) { t = (lo + hi) / 2; if (at(t, x1, x2) < x) lo = t; else hi = t; }
+      return at(t, y1, y2);
+    };
+  }
+  var EASE_OUT = bezier(0.23, 1, 0.32, 1);     // strong ease-out: responds immediately
+  var EASE_MOVE = bezier(0.77, 0, 0.175, 1);   // strong ease-in-out: on-screen movement
+
   // GSAP + ScrollTrigger are already loaded by the live site
   window.addEventListener('load', function () {
     gsap.registerPlugin(ScrollTrigger);
@@ -99,44 +112,35 @@
     }, extra));
   }
 
-  // Option 1: each band arrives in its own deeper teal, sweeps up over the previous one,
-  // then settles into the live light blue (so old and new are clearly separated mid-change).
-  // start colour = settled colour mixed with this much brand teal (one value per argument)
-  var STACK_TINT = [0.05, 0.07, 0.09, 0.11];
+  // Option 1: each band arrives slightly deeper (a teal overlay), sweeps up over the previous one,
+  // then the overlay fades so it settles into the live light blue. Text swaps with a short blur.
+  var STACK_TINT = [0.05, 0.07, 0.09, 0.11]; // overlay strength per argument
   function stack(el) {
     var faces = gsap.utils.toArray('.args-face', el);
-    var settled = function () { return getComputedStyle(el).getPropertyValue('--settled').trim(); };
-    var shade = function (i) {
-      return function () {
-        var c = gsap.utils.splitColor(settled()), teal = [0, 155, 155], t = STACK_TINT[i];
-        return 'rgb(' + c.slice(0, 3).map(function (v, k) { return Math.round(v + (teal[k] - v) * t); }).join(',') + ')';
-      };
-    };
-    var STACK_SHADES = [0, 1, 2, 3].map(shade);
+    var shades = faces.map(function (f) { return f.querySelector('.args-shade'); });
+    var texts = faces.map(function (f) { return f.querySelector('.container'); });
     gsap.set(faces.slice(1), { yPercent: 100 });
-    gsap.set(faces.map(function (f) { return f.querySelector('.container'); }).slice(1), { autoAlpha: 0, y: 20 });
+    gsap.set(texts.slice(1), { autoAlpha: 0, y: 20, filter: 'blur(4px)' });
+    gsap.set(shades, { opacity: function (i) { return STACK_TINT[i]; } });
 
-    // first band: tinted while the block scrolls into view, light blue by the time it pins
-    gsap.fromTo(faces[0], { backgroundColor: STACK_SHADES[0] }, {
-      backgroundColor: settled, ease: 'none',
-      scrollTrigger: { trigger: el, start: 'top bottom', end: 'center center', scrub: true, invalidateOnRefresh: true }
+    // first band: tinted while the block scrolls into view, plain by the time it pins
+    gsap.to(shades[0], {
+      opacity: 0, ease: 'none',
+      scrollTrigger: { trigger: el, start: 'top bottom', end: 'center center', scrub: true }
     });
 
     var tl = pinned(el);
     for (var i = 1; i < N; i++) {
-      var prev = faces[i - 1].querySelector('.container');
-      var next = faces[i].querySelector('.container');
-      tl.to(prev, { autoAlpha: 0, yPercent: -25, duration: 0.45, ease: 'power1.in' }, i === 1 ? 0 : '>0.15')
-        .fromTo(faces[i], { backgroundColor: STACK_SHADES[i] }, { yPercent: 0, duration: 0.8, ease: 'power3.out' }, '<')
-        .to(next, { autoAlpha: 1, y: 0, duration: 0.5, ease: 'power2.out' }, '<0.35')
-        .to(faces[i], { backgroundColor: settled, duration: 0.6, ease: 'power1.inOut' }, '<0.1');
+      tl.to(texts[i - 1], { autoAlpha: 0, yPercent: -25, filter: 'blur(4px)', duration: 0.45, ease: EASE_OUT }, i === 1 ? 0 : '>0.15')
+        .to(faces[i], { yPercent: 0, duration: 0.8, ease: 'power3.out' }, '<')
+        .to(texts[i], { autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.5, ease: EASE_OUT }, '<0.35')
+        .to(shades[i], { opacity: 0, duration: 0.6, ease: 'power1.inOut' }, '<0.1');
     }
     tl.to({}, { duration: 0.25 });
   }
 
   // Option 3: scrubbed editorial sequence. Photo wipes up with a slow settle, copy swaps with a
   // short blur (masks the crossfade), index tabs fill while each argument is on and jump on click.
-  var EASE_MOVE = 'cubic-bezier(0.77, 0, 0.175, 1)'; // strong ease-in-out for on-screen movement
   function split(el) {
     var slides = gsap.utils.toArray('.split__slide', el);
     var items = gsap.utils.toArray('.split__item', el);
@@ -166,7 +170,7 @@
       tl.to(slides[i], { clipPath: 'inset(0% 0% 0% 0%)', ease: EASE_MOVE, duration: 1 }, t)
         .fromTo(slides[i].querySelector('img'), { scale: 1.12 }, { scale: 1, ease: 'power3.out', duration: 1.4 }, t)
         .to(slides[i - 1].querySelector('img'), { scale: 0.96, ease: EASE_MOVE, duration: 1 }, t)
-        .to(items[i - 1], { autoAlpha: 0, y: -24, filter: 'blur(6px)', ease: 'power2.in', duration: 0.4 }, t)
+        .to(items[i - 1], { autoAlpha: 0, y: -24, filter: 'blur(6px)', ease: EASE_OUT, duration: 0.4 }, t)
         .to(items[i], { autoAlpha: 1, y: 0, filter: 'blur(0px)', ease: 'power3.out', duration: 0.6 }, t + 0.35);
     }
 
@@ -184,21 +188,22 @@
   function cube(el) {
     var box = el.querySelector('.args-box');
     var faces = gsap.utils.toArray('.args-face', el);
+    var shades = faces.map(function (f) { return f.querySelector('.args-shade'); });
     var state = { rot: 0 };
 
     function render() {
       var r = state.rot;
       gsap.set(box, { rotateX: r * 90 });
-      faces.forEach(function (f, i) {
-        // shade faces as they turn away from the viewer
+      shades.forEach(function (s, i) {
+        // darken faces as they turn away (overlay opacity: compositor-only, no repaint)
         var a = (r - i) * Math.PI / 2;
-        f.style.filter = 'brightness(' + (0.75 + 0.25 * Math.max(0, Math.cos(a))).toFixed(3) + ')';
+        s.style.opacity = (0.25 * (1 - Math.max(0, Math.cos(a)))).toFixed(3);
       });
     }
 
     var tl = pinned(el, { onUpdate: render });
     for (var i = 1; i < N; i++) {
-      tl.to(state, { rot: i, duration: 1, ease: 'power2.inOut' }, i === 1 ? 0 : '>0.15');
+      tl.to(state, { rot: i, duration: 1, ease: EASE_MOVE }, i === 1 ? 0 : '>0.15');
     }
     tl.to({}, { duration: 0.25 });
     render();
