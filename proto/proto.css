@@ -4,6 +4,9 @@
    position:sticky. `clip` hides the same overflow without that side effect. */
 body:has(.args) { overflow: visible; overflow-x: clip; }
 
+/* prototype: hide the site's campaign popup on every view */
+.campaign-popup-wrapper { display: none !important; }
+
 /* prototype menu: keep "Option N" on one line on small laptops */
 header .menu_part a[data-option] { white-space: nowrap; }
 .args {
