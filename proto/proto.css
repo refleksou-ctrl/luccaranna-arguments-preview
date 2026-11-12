@@ -22,7 +22,7 @@ header .menu_part a[data-option] { white-space: nowrap; }
 .args img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
 /* ---------- live band (options 1 + 3): copied from .values-block ---------- */
-.args--stack, .args--cube, .args--track, .args--roll { --h: 161px; }
+.args--stack, .args--track { --h: 161px; }
 .args-box { position: relative; height: var(--h); }
 
 /* shared type – copied from the live .values-block */
@@ -61,39 +61,26 @@ header .menu_part a[data-option] { white-space: nowrap; }
 /* ---------- Option 1: bands stacking on top ---------- */
 .args--stack .args-box { overflow: hidden; }
 
-/* ---------- Option 4: sideways track ---------- */
+/* ---------- Option 2: sideways track ---------- */
 .args--track .args-box { overflow: hidden; background: var(--band); }
 .track { display: flex; width: calc(var(--n) * 100%); height: 100%; }
 .args--track .args-face { position: relative; flex: 1 1 0; }
 .track-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--teal); transform: scaleX(.25); transform-origin: left; }
 
-/* ---------- Option 5: masked roll ---------- */
-.roll { display: grid; overflow: hidden; }
-/* every line fills the whole window, so moving it by 110% of itself always clears the window */
-.roll > span { grid-area: 1 / 1; display: flex; align-items: center; }
-.args--roll .container { text-align: inherit; }
-@media (min-width: 1025px) { .roll > span { white-space: nowrap; } } /* desktop: one line each (descriptions keep their own <br>) */
-@media (max-width: 1024px) { .roll > span { justify-content: center; } }
-
-/* ---------- Option 2: 3D cube ---------- */
-.args--cube { perspective: 1600px; }
-/* GSAP sets rotateX on `transform`; `translate` pushes the box back so the front face stays the live size */
-.args--cube .args-box { transform-style: preserve-3d; translate: 0 0 calc(var(--h) / -2); }
-.args--cube .args-face { backface-visibility: hidden; transform: rotateX(calc(var(--i) * -90deg)) translateZ(calc(var(--h) / 2)); }
+.args-face { backface-visibility: hidden; transform: rotateX(calc(var(--i) * -90deg)) translateZ(calc(var(--h) / 2)); }
 
 .args-face { position: absolute; inset: 0; display: flex; align-items: center; background: var(--band); }
 .args-face .container { position: relative; display: flex; align-items: center; justify-content: center; }
-/* overlay under the text: teal tint for option 1, darkening for option 2 */
+/* overlay under the text: teal tint for option 1 */
 .args-shade { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
 .args--stack .args-shade { background: var(--teal); }
-.args--cube .args-shade { background: #00302f; }
 .args-face .large-text {
   display: flex; align-items: center; min-height: 97px; padding-right: 50px; border-right: 1px solid var(--teal);
   color: var(--teal); font-weight: 700; font-size: 32.447px; line-height: 40.558px; letter-spacing: 16.223px; text-transform: uppercase;
 }
 .args-face .small-text { margin-left: 50px; padding-bottom: 0; color: #222530; font-size: 15px; line-height: 25.5px; }
 @media (max-width: 1024px) {
-  .args--stack, .args--cube, .args--track, .args--roll { --h: 170px; }
+  .args--stack, .args--track { --h: 170px; }
   .args-face, .args--track .args-box { background: var(--band-soft); }
   .args-face .container { flex-direction: column; text-align: center; }
   .args-face .large-text { min-height: 0; padding: 0; border: 0; margin-bottom: 10px; font-size: 20px; line-height: 26px; letter-spacing: 10.57px; }
