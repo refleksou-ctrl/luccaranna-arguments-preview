@@ -60,6 +60,8 @@ header .menu_part a[data-option] { white-space: nowrap; }
 
 /* ---------- Option 1: bands stacking on top ---------- */
 .args--stack .args-box { overflow: hidden; }
+/* 1.5: soft shadow on the incoming box's top edge so you see one box sliding over the other */
+.args--cover .args-face + .args-face { box-shadow: 0 -10px 18px -12px rgba(0, 60, 60, .35); }
 
 /* ---------- Option 2: sideways track ---------- */
 .args--track .args-box { overflow: hidden; background: var(--band); }

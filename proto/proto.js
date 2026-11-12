@@ -1,6 +1,6 @@
 /* Lucca Ranna – sales-argument prototypes.
    ?option=0 (or none) keeps the live block untouched.
-   ?option=1 stacking bands, ?option=2 sideways track, ?option=3 editorial split (the "extra"). */
+   ?option=1 stacking bands, ?option=1.5 stacking bands without fades, ?option=2 sideways track, ?option=3 editorial split (the "extra"). */
 (function () {
   'use strict';
 
@@ -12,7 +12,7 @@
   ];
   var N = ARGS.length;
 
-  var option = parseInt(new URLSearchParams(location.search).get('option'), 10) || 0;
+  var option = parseFloat(new URLSearchParams(location.search).get('option')) || 0; // 1.5 is a valid option
 
   // highlight the active menu link
   document.querySelectorAll('[data-option]').forEach(function (a) {
@@ -43,7 +43,7 @@
     '</div></div>';
   }).join('');
 
-  if (option === 1) html = '<section class="args args--stack"><div class="args-box">' + bands + '</div></section>';
+  if (option === 1 || option === 1.5) html = '<section class="args args--stack' + (option === 1.5 ? ' args--cover' : '') + '"><div class="args-box">' + bands + '</div></section>';
   // Option 2: the bands side by side in one track that slides sideways; progress line underneath
   if (option === 2) html = '<section class="args args--track"><div class="args-box"><div class="track" style="--n:' + N + '">' +
     bands + '</div><span class="track-progress"></span></div></section>';
@@ -96,7 +96,7 @@
   // GSAP + ScrollTrigger are already loaded by the live site
   window.addEventListener('load', function () {
     gsap.registerPlugin(ScrollTrigger);
-    ({ 1: stack, 2: track, 3: split })[option](section);
+    ({ 1: stack, 1.5: function (el) { stack(el, true); }, 2: track, 3: split })[option](section);
     ScrollTrigger.refresh();
   });
 
@@ -116,13 +116,15 @@
 
   // Option 1: each band arrives slightly deeper (a teal overlay), sweeps up over the previous one,
   // then the overlay fades so it settles into the live light blue. Text swaps with a short blur.
+  // Option 1.5 (cover = true): no fade or blur at all – both texts stay visible and the new box
+  // simply slides up over the old one, so there is never an empty band.
   var STACK_TINT = [0.05, 0.07, 0.09, 0.11]; // overlay strength per argument
-  function stack(el) {
+  function stack(el, cover) {
     var faces = gsap.utils.toArray('.args-face', el);
     var shades = faces.map(function (f) { return f.querySelector('.args-shade'); });
     var texts = faces.map(function (f) { return f.querySelector('.container'); });
-    gsap.set(faces.slice(1), { yPercent: 100 });
-    gsap.set(texts.slice(1), { autoAlpha: 0, y: 20, filter: 'blur(4px)' });
+    gsap.set(faces.slice(1), { yPercent: cover ? 115 : 100 }); // 1.5: park far enough down that the top-edge shadow is hidden too
+    if (!cover) gsap.set(texts.slice(1), { autoAlpha: 0, y: 20, filter: 'blur(4px)' });
     gsap.set(shades, { opacity: function (i) { return STACK_TINT[i]; } });
 
     // first band: tinted while the block scrolls into view, plain by the time it pins
@@ -133,6 +135,11 @@
 
     var tl = pinned(el);
     for (var i = 1; i < N; i++) {
+      if (cover) {
+        tl.to(faces[i], { yPercent: 0, duration: 0.8, ease: EASE_MOVE }, i === 1 ? 0 : '>0.15')
+          .to(shades[i], { opacity: 0, duration: 0.5, ease: 'power1.inOut' }, '>-0.2');
+        continue;
+      }
       tl.to(texts[i - 1], { autoAlpha: 0, yPercent: -25, filter: 'blur(4px)', duration: 0.45, ease: EASE_OUT }, i === 1 ? 0 : '>0.15')
         .to(faces[i], { yPercent: 0, duration: 0.8, ease: 'power3.out' }, '<')
         .to(texts[i], { autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.5, ease: EASE_OUT }, '<0.35')
